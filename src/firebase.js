@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDFmcLJZdbtZ7XaDZArSsn0d5t4HRTx-rw',
-  authDomain: 'flower-shop-69019.firebaseapp.com',
-  projectId: 'flower-shop-69019',
-  storageBucket: 'flower-shop-69019.firebasestorage.app',
-  messagingSenderId: '382445615532',
-  appId: '1:382445615532:web:9a656249b6af8f5f44e209',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = initializeApp(firebaseConfig)
