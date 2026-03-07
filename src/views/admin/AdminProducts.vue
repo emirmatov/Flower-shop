@@ -192,6 +192,8 @@ async function saveProduct() {
     category: form.value.category,
     image: form.value.image,
     description: form.value.description || '',
+    oldPrice: form.value.oldPrice || null,
+    inStock: form.value.inStock ?? true,
   }
 
   if (editingProduct.value) {

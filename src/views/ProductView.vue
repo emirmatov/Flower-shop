@@ -1,214 +1,270 @@
 <template>
-  <div
-    class="product-card"
-    :class="{ 'out-of-stock': !product.inStock }"
-    @click="router.push(`/product/${product.id}`)"
-  >
-    <div class="card-image">
-      <img :src="product.image" :alt="product.name" />
+  <section class="product-page">
+    <div v-if="loading" class="state-block">Загрузка...</div>
 
-      <!-- Бейдж скидки -->
-      <span v-if="product.oldPrice && product.inStock" class="badge-sale">
-        -{{ Math.round((1 - product.price / product.oldPrice) * 100) }}%
-      </span>
+    <div v-else-if="!product" class="state-block">Товар не найден</div>
 
-      <!-- Бейдж нет в наличии -->
-      <span v-if="!product.inStock" class="badge-out"> Нет в наличии </span>
+    <div v-else class="product-layout">
+      <button class="back-btn" @click="router.push('/catalog')">← Назад в каталог</button>
 
-      <span class="card-category">{{ product.category }}</span>
-    </div>
-
-    <div class="card-body">
-      <h3 class="card-name">{{ product.name }}</h3>
-      <div class="card-footer">
-        <div class="prices">
-          <span class="card-price">{{ product.price.toLocaleString() }} ₸</span>
-          <span v-if="product.oldPrice" class="old-price">
-            {{ product.oldPrice.toLocaleString() }} ₸
-          </span>
+      <div class="product-content">
+        <div class="product-image">
+          <img :src="product.image" :alt="product.name" />
         </div>
-        <button
-          class="card-btn"
-          :class="{ disabled: !product.inStock }"
-          :disabled="!product.inStock"
-          @click.stop="handleAddToCart"
-        >
-          {{ product.inStock ? '+ В корзину' : 'Нет' }}
-        </button>
+
+        <div class="product-info">
+          <span class="product-category">{{ product.category }}</span>
+
+          <h1 class="product-title">{{ product.name }}</h1>
+
+          <div class="product-price">{{ Number(product.price || 0).toLocaleString() }} ₸</div>
+
+          <p class="product-description">
+            {{ product.description || 'Описание отсутствует' }}
+          </p>
+
+          <div v-if="product.inStock === false" class="out-text">Нет в наличии</div>
+
+          <template v-else>
+            <div class="quantity-row">
+              <button class="qty-btn" @click="decreaseQty">−</button>
+              <span class="qty-value">{{ quantity }}</span>
+              <button class="qty-btn" @click="increaseQty">+</button>
+            </div>
+
+            <div class="total-price">Итого: {{ totalPrice.toLocaleString() }} ₸</div>
+          </template>
+
+          <button class="add-btn" :disabled="product.inStock === false" @click="handleAddToCart">
+            {{ product.inStock === false ? 'Нет в наличии' : 'Добавить в корзину' }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import { useCartStore } from '@/stores/cartStore'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { doc, getDoc } from 'firebase/firestore'
 import { useToast } from 'primevue/usetoast'
+import { db } from '@/firebase'
+import { useCartStore } from '@/stores/cartStore'
 
-const props = defineProps({
-  product: { type: Object, required: true },
+const route = useRoute()
+const router = useRouter()
+const toast = useToast()
+const cart = useCartStore()
+
+const loading = ref(true)
+const product = ref(null)
+const quantity = ref(1)
+
+const totalPrice = computed(() => {
+  return Number(product.value?.price || 0) * quantity.value
 })
 
-const router = useRouter()
-const cart = useCartStore()
-const toast = useToast()
+function increaseQty() {
+  quantity.value++
+}
+
+function decreaseQty() {
+  if (quantity.value > 1) quantity.value--
+}
 
 function handleAddToCart() {
-  if (!props.product.inStock) return
-  cart.addToCart(props.product)
+  if (!product.value || product.value.inStock === false) return
+
+  cart.addToCart({
+    ...product.value,
+    quantity: quantity.value,
+  })
+
   toast.add({
     severity: 'success',
     summary: 'Добавлено!',
-    detail: props.product.name,
+    detail: `${product.value.name} x${quantity.value}`,
     life: 2000,
   })
 }
+
+onMounted(async () => {
+  loading.value = true
+
+  try {
+    const id = route.params.id
+
+    if (!id) {
+      product.value = null
+      return
+    }
+
+    const snap = await getDoc(doc(db, 'products', id))
+
+    if (snap.exists()) {
+      const data = snap.data()
+
+      product.value = {
+        id: snap.id,
+        name: data.name || '',
+        image: data.image || '',
+        price: data.price || 0,
+        oldPrice: data.oldPrice || null,
+        description: data.description || '',
+        category: data.category || '',
+        inStock: data.inStock !== false,
+      }
+    } else {
+      product.value = null
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки товара:', error)
+    product.value = null
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>
-.product-card {
-  background: var(--white);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: pointer;
-  transition:
-    transform 0.3s,
-    box-shadow 0.3s;
-  border: 1px solid transparent;
+.product-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
 }
 
-.product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--pink-mid);
+.state-block {
+  padding: 4rem 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
 }
 
-.product-card.out-of-stock {
-  opacity: 0.7;
-}
-
-.product-card.out-of-stock:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-.card-image {
-  position: relative;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background: var(--pink-light);
-}
-
-.card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.product-card:hover .card-image img {
-  transform: scale(1.08);
-}
-
-.card-category {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--pink);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* Бейдж скидки */
-.badge-sale {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--pink);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-/* Бейдж нет в наличии */
-.badge-out {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(0, 0, 0, 0.55);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.card-body {
-  padding: 1rem 1.1rem 1.1rem;
-}
-
-.card-name {
-  font-family: 'Playfair Display', serif;
+.back-btn {
+  margin-bottom: 1.5rem;
+  background: transparent;
+  border: none;
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--dark);
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
+  cursor: pointer;
+  color: #666;
 }
 
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.prices {
+.product-layout {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
 }
 
-.card-price {
-  font-size: 1.05rem;
+.product-content {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.product-image {
+  background: var(--white);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.product-category {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  color: var(--pink);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.product-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-family: 'Playfair Display', serif;
+  color: var(--dark);
+}
+
+.product-price {
+  font-size: 2rem;
   font-weight: 700;
   color: var(--pink);
+  margin-bottom: 1rem;
 }
 
-.old-price {
-  font-size: 0.8rem;
+.product-description {
   color: var(--muted);
-  text-decoration: line-through;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
 }
 
-.card-btn {
-  background: var(--pink-light);
-  color: var(--pink);
-  border: none;
-  padding: 0.45rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+.quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.qty-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #66c4a0;
+  background: transparent;
   cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-size: 1.5rem;
 }
 
-.card-btn:hover:not(.disabled) {
-  background: var(--pink);
-  color: white;
+.qty-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 
-.card-btn.disabled {
-  background: #eee;
-  color: #aaa;
+.total-price {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--dark);
+}
+
+.out-text {
+  margin-bottom: 1rem;
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.add-btn {
+  width: 100%;
+  border: none;
+  background: #39d39f;
+  color: #111;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-btn:disabled {
+  background: #ddd;
+  color: #888;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .product-content {
+    grid-template-columns: 1fr;
+  }
+
+  .product-title {
+    font-size: 2rem;
+  }
 }
 </style>
