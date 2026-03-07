@@ -94,7 +94,23 @@ import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import ProductCard from '@/components/catalog/ProductCard.vue'
 import { useProductsStore } from '@/stores/productsStore'
+import { useHead } from '@unhead/vue'
 
+useHead({
+  title: 'Fleur — Свежие цветы с доставкой в Алматы',
+  meta: [
+    {
+      name: 'description',
+      content: 'Букеты, горшечные растения и цветы поштучно. Доставка в день заказа по Алматы.',
+    },
+    { property: 'og:title', content: 'Fleur — Свежие цветы с доставкой' },
+    {
+      property: 'og:description',
+      content: 'Букеты, горшечные растения и цветы поштучно. Доставка в день заказа.',
+    },
+    { property: 'og:image', content: 'https://flower-shop-69019.web.app/og-image.jpg' },
+  ],
+})
 const router = useRouter()
 const productsStore = useProductsStore()
 

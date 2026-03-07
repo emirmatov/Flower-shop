@@ -55,7 +55,18 @@ import Select from 'primevue/select'
 import ProgressSpinner from 'primevue/progressspinner'
 import ProductCard from '@/components/catalog/ProductCard.vue'
 import { useProductsStore } from '@/stores/productsStore'
+import { useHead } from '@unhead/vue'
 
+useHead({
+  title: 'Каталог цветов — Fleur',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'Большой выбор букетов, горшечных растений и цветов поштучно. Быстрая доставка по Алматы.',
+    },
+  ],
+})
 const route = useRoute()
 const productsStore = useProductsStore()
 

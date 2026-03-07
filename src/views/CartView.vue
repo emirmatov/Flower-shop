@@ -101,7 +101,11 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { useCartStore } from '@/stores/cartStore'
+import { useHead } from '@unhead/vue'
 
+useHead({
+  title: 'Корзина — Fleur',
+})
 const router = useRouter()
 const cart = useCartStore()
 </script>

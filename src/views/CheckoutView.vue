@@ -75,7 +75,11 @@ import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { useCartStore } from '@/stores/cartStore'
+import { useHead } from '@unhead/vue'
 
+useHead({
+  title: 'Оформление заказа — Fleur',
+})
 const router = useRouter()
 const cart = useCartStore()
 

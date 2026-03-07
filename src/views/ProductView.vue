@@ -51,7 +51,29 @@ import { doc, getDoc } from 'firebase/firestore'
 import { useToast } from 'primevue/usetoast'
 import { db } from '@/firebase'
 import { useCartStore } from '@/stores/cartStore'
+import { useHead } from '@unhead/vue'
 
+useHead(
+  computed(() => ({
+    title: product.value ? `${product.value.name} — Fleur` : 'Товар — Fleur',
+    meta: [
+      {
+        name: 'description',
+        content: product.value?.description
+          ? `${product.value.description} Купить в Алматы.`
+          : 'Купить цветы с доставкой в Алматы.',
+      },
+      {
+        property: 'og:title',
+        content: product.value?.name ?? 'Fleur',
+      },
+      {
+        property: 'og:image',
+        content: product.value?.image ?? '',
+      },
+    ],
+  })),
+)
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -131,23 +153,30 @@ onMounted(async () => {
 .product-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+  padding: 2rem 2rem 4rem;
 }
 
 .state-block {
   padding: 4rem 1rem;
   text-align: center;
   font-size: 1.2rem;
-  color: #666;
+  color: var(--muted);
 }
 
 .back-btn {
   margin-bottom: 1.5rem;
   background: transparent;
   border: none;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  color: #666;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.back-btn:hover {
+  color: var(--pink);
 }
 
 .product-layout {
@@ -163,7 +192,7 @@ onMounted(async () => {
 }
 
 .product-image {
-  background: var(--white);
+  background: var(--pink-light);
   border-radius: 24px;
   overflow: hidden;
 }
@@ -180,14 +209,17 @@ onMounted(async () => {
   color: var(--pink);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
 }
 
 .product-title {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   margin-bottom: 1rem;
   font-family: 'Playfair Display', serif;
   color: var(--dark);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .product-price {
@@ -199,8 +231,9 @@ onMounted(async () => {
 
 .product-description {
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .quantity-row {
@@ -214,10 +247,19 @@ onMounted(async () => {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid #66c4a0;
+  border: 1.5px solid var(--pink-mid);
   background: transparent;
   cursor: pointer;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  color: var(--pink);
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.qty-btn:hover {
+  background: var(--pink);
+  color: white;
+  border-color: var(--pink);
 }
 
 .qty-value {
@@ -228,9 +270,9 @@ onMounted(async () => {
 }
 
 .total-price {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   color: var(--dark);
 }
 
@@ -243,28 +285,46 @@ onMounted(async () => {
 .add-btn {
   width: 100%;
   border: none;
-  background: #39d39f;
-  color: #111;
+  background: var(--pink);
+  color: white;
   padding: 1rem 1.2rem;
-  border-radius: 12px;
-  font-size: 1.05rem;
+  border-radius: 50px;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  box-shadow: 0 8px 24px rgba(232, 84, 122, 0.35);
+}
+
+.add-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(232, 84, 122, 0.45);
 }
 
 .add-btn:disabled {
   background: #ddd;
   color: #888;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (max-width: 900px) {
+  .product-page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
   .product-content {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .product-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
+  }
+
+  .product-price {
+    font-size: 1.5rem;
   }
 }
 </style>

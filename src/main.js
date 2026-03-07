@@ -7,6 +7,9 @@ import ToastService from 'primevue/toastservice'
 import './assets/main.css'
 import App from './App.vue'
 import router from './router'
+import { createHead } from '@unhead/vue'
+
+const head = createHead()
 
 const app = createApp(App)
 
@@ -17,6 +20,6 @@ app.use(PrimeVue, {
     preset: Aura,
   },
 })
-
+app.use(head)
 app.use(ToastService)
 app.mount('#app')
