@@ -1,39 +1,37 @@
 <template>
   <div
-    v-if="product"
     class="product-card"
-    :class="{ 'out-of-stock': isOutOfStock }"
-    @click="goToProduct"
+    :class="{ 'out-of-stock': product.inStock === false }"
+    @click="router.push(`/product/${product.id}`)"
   >
     <div class="card-image">
       <img :src="product.image" :alt="product.name" />
 
-      <span v-if="hasDiscount && !isOutOfStock" class="badge-sale"> -{{ discountPercent }}% </span>
+      <span v-if="product.oldPrice && product.inStock !== false" class="badge-sale">
+        -{{ Math.round((1 - product.price / product.oldPrice) * 100) }}%
+      </span>
 
-      <span v-if="isOutOfStock" class="badge-out"> Нет в наличии </span>
+      <span v-if="product.inStock === false" class="badge-out"> Нет в наличии </span>
 
       <span class="card-category">{{ product.category }}</span>
     </div>
 
     <div class="card-body">
       <h3 class="card-name">{{ product.name }}</h3>
-
       <div class="card-footer">
         <div class="prices">
-          <span class="card-price">{{ Number(product.price || 0).toLocaleString() }} ₸</span>
-
+          <span class="card-price">{{ product.price.toLocaleString() }} ₸</span>
           <span v-if="product.oldPrice" class="old-price">
-            {{ Number(product.oldPrice).toLocaleString() }} ₸
+            {{ product.oldPrice.toLocaleString() }} ₸
           </span>
         </div>
-
         <button
           class="card-btn"
-          :class="{ disabled: isOutOfStock }"
-          :disabled="isOutOfStock"
+          :class="{ disabled: product.inStock === false }"
+          :disabled="product.inStock === false"
           @click.stop="handleAddToCart"
         >
-          {{ isOutOfStock ? 'Нет' : '+ В корзину' }}
+          {{ product.inStock === false ? 'Нет' : '+ В корзину' }}
         </button>
       </div>
     </div>
@@ -41,47 +39,21 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
 import { useToast } from 'primevue/usetoast'
 
 const props = defineProps({
-  product: {
-    type: Object,
-    default: null,
-  },
+  product: { type: Object, required: true, default: () => ({}) },
 })
 
 const router = useRouter()
 const cart = useCartStore()
 const toast = useToast()
 
-const isOutOfStock = computed(() => props.product?.inStock === false)
-
-const hasDiscount = computed(() => {
-  return (
-    props.product?.oldPrice &&
-    props.product?.price &&
-    Number(props.product.oldPrice) > Number(props.product.price)
-  )
-})
-
-const discountPercent = computed(() => {
-  if (!hasDiscount.value) return 0
-  return Math.round((1 - props.product.price / props.product.oldPrice) * 100)
-})
-
-function goToProduct() {
-  if (!props.product?.id) return
-  router.push(`/product/${props.product.id}`)
-}
-
 function handleAddToCart() {
-  if (!props.product || isOutOfStock.value) return
-
+  if (props.product.inStock === false) return
   cart.addToCart(props.product)
-
   toast.add({
     severity: 'success',
     summary: 'Добавлено!',
