@@ -7,8 +7,7 @@ import ToastService from 'primevue/toastservice'
 import './assets/main.css'
 import App from './App.vue'
 import router from './router'
-import { createHead } from '@unhead/vue'
-
+import { createHead } from '@unhead/vue/client'
 const head = createHead()
 
 const app = createApp(App)
