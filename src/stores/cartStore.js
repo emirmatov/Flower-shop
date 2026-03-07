@@ -39,13 +39,11 @@ export const useCartStore = defineStore('cart', () => {
       if (item.quantity > 1) {
         item.quantity--
       } else {
-        // Если количество 1 — удаляем товар
         removeFromCart(productId)
       }
     }
   }
 
-  // Не забудь добавить их в return!
   return {
     items,
     totalCount,
@@ -54,6 +52,6 @@ export const useCartStore = defineStore('cart', () => {
     removeFromCart,
     clearCart,
     increaseQuantity,
-    decreaseQuantity, // 👈
+    decreaseQuantity,
   }
 })
