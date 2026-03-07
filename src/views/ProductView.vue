@@ -1,211 +1,214 @@
 <template>
-  <div class="product-page">
-    <!-- Кнопка назад -->
-    <Button
-      label="Назад в каталог"
-      icon="pi pi-arrow-left"
-      text
-      @click="router.push('/catalog')"
-      class="back-btn"
-    />
+  <div
+    class="product-card"
+    :class="{ 'out-of-stock': !product.inStock }"
+    @click="router.push(`/product/${product.id}`)"
+  >
+    <div class="card-image">
+      <img :src="product.image" :alt="product.name" />
 
-    <!-- Загрузка -->
-    <div v-if="loading" class="loading">
-      <ProgressSpinner />
+      <!-- Бейдж скидки -->
+      <span v-if="product.oldPrice && product.inStock" class="badge-sale">
+        -{{ Math.round((1 - product.price / product.oldPrice) * 100) }}%
+      </span>
+
+      <!-- Бейдж нет в наличии -->
+      <span v-if="!product.inStock" class="badge-out"> Нет в наличии </span>
+
+      <span class="card-category">{{ product.category }}</span>
     </div>
 
-    <!-- Товар не найден -->
-    <div v-else-if="!product" class="not-found">
-      <p>Товар не найден 😢</p>
-      <Button label="Вернуться в каталог" @click="router.push('/catalog')" />
-    </div>
-
-    <!-- Сам товар -->
-    <div v-else class="product-layout">
-      <!-- Фото -->
-      <div class="product-image">
-        <img :src="product.image" :alt="product.name" />
-      </div>
-
-      <!-- Инфо -->
-      <div class="product-details">
-        <span class="product-category">{{ product.category }}</span>
-        <h1 class="product-name">{{ product.name }}</h1>
-        <p class="product-price">{{ product.price }} ₸</p>
-        <p class="product-description">{{ product.description }}</p>
-
-        <!-- Количество -->
-        <div class="quantity-row">
-          <Button
-            icon="pi pi-minus"
-            rounded
-            outlined
-            @click="decreaseQty"
-            :disabled="quantity <= 1"
-          />
-          <span class="quantity">{{ quantity }}</span>
-          <Button icon="pi pi-plus" rounded outlined @click="quantity++" />
+    <div class="card-body">
+      <h3 class="card-name">{{ product.name }}</h3>
+      <div class="card-footer">
+        <div class="prices">
+          <span class="card-price">{{ product.price.toLocaleString() }} ₸</span>
+          <span v-if="product.oldPrice" class="old-price">
+            {{ product.oldPrice.toLocaleString() }} ₸
+          </span>
         </div>
-
-        <!-- Итого -->
-        <p class="total-price">
-          Итого: <strong>{{ product.price * quantity }} ₸</strong>
-        </p>
-
-        <!-- Кнопка в корзину -->
-        <Button
-          label="Добавить в корзину"
-          icon="pi pi-shopping-cart"
-          size="large"
-          class="add-btn"
-          @click="handleAddToCart"
-        />
+        <button
+          class="card-btn"
+          :class="{ disabled: !product.inStock }"
+          :disabled="!product.inStock"
+          @click.stop="handleAddToCart"
+        >
+          {{ product.inStock ? '+ В корзину' : 'Нет' }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
-import { useProductsStore } from '@/stores/productsStore'
 import { useToast } from 'primevue/usetoast'
 
-const route = useRoute()
-const router = useRouter()
-const cart = useCartStore()
-const productsStore = useProductsStore()
-const toast = useToast()
-
-const product = ref(null)
-const loading = ref(true)
-const quantity = ref(1)
-
-onMounted(async () => {
-  // Если товары ещё не загружены — загружаем
-  if (productsStore.products.length === 0) {
-    await productsStore.fetchProducts()
-  }
-
-  // Ищем товар по id из URL
-  const id = route.params.id
-  product.value = productsStore.products.find((p) => p.id === id) || null
-  loading.value = false
+const props = defineProps({
+  product: { type: Object, required: true },
 })
 
-function decreaseQty() {
-  if (quantity.value > 1) quantity.value--
-}
+const router = useRouter()
+const cart = useCartStore()
+const toast = useToast()
 
 function handleAddToCart() {
-  for (let i = 0; i < quantity.value; i++) {
-    cart.addToCart(product.value)
-  }
+  if (!props.product.inStock) return
+  cart.addToCart(props.product)
   toast.add({
     severity: 'success',
     summary: 'Добавлено!',
-    detail: `${product.value.name} (${quantity.value} шт.)`,
+    detail: props.product.name,
     life: 2000,
   })
 }
 </script>
 
 <style scoped>
-.product-page {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+.product-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  border: 1px solid transparent;
 }
 
-.back-btn {
-  margin-bottom: 1.5rem;
-  color: #888;
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--pink-mid);
 }
 
-.loading,
-.not-found {
-  text-align: center;
-  padding: 4rem;
+.product-card.out-of-stock {
+  opacity: 0.7;
 }
 
-.product-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: start;
+.product-card.out-of-stock:hover {
+  transform: none;
+  box-shadow: none;
 }
 
-.product-image img {
+.card-image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--pink-light);
+}
+
+.card-image img {
   width: 100%;
-  border-radius: 16px;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
-.product-category {
-  font-size: 0.85rem;
-  color: #e91e8c;
+.product-card:hover .card-image img {
+  transform: scale(1.08);
+}
+
+.card-category {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
   font-weight: 600;
+  color: var(--pink);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.product-name {
-  font-size: 1.75rem;
+/* Бейдж скидки */
+.badge-sale {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--pink);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 700;
-  margin: 0.5rem 0;
 }
 
-.product-price {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #e91e8c;
-  margin: 0.5rem 0;
+/* Бейдж нет в наличии */
+.badge-out {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
-.product-description {
-  color: #555;
-  line-height: 1.6;
-  margin: 1rem 0;
+.card-body {
+  padding: 1rem 1.1rem 1.1rem;
 }
 
-.quantity-row {
+.card-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.card-footer {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin: 1.5rem 0 0.5rem;
+  justify-content: space-between;
 }
 
-.quantity {
-  font-size: 1.2rem;
+.prices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.card-price {
+  font-size: 1.05rem;
   font-weight: 700;
-  min-width: 2rem;
-  text-align: center;
+  color: var(--pink);
 }
 
-.total-price {
-  color: #555;
-  margin-bottom: 1.5rem;
+.old-price {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
-.add-btn {
-  width: 100%;
+.card-btn {
+  background: var(--pink-light);
+  color: var(--pink);
+  border: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
 }
 
-@media (max-width: 768px) {
-  .product-page {
-    padding: 1rem;
-  }
+.card-btn:hover:not(.disabled) {
+  background: var(--pink);
+  color: white;
+}
 
-  .product-layout {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .product-content h1 {
-    font-size: 1.4rem;
-  }
+.card-btn.disabled {
+  background: #eee;
+  color: #aaa;
+  cursor: not-allowed;
 }
 </style>

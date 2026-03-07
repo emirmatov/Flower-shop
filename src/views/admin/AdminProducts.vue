@@ -98,6 +98,14 @@
           <label>Описание</label>
           <Textarea v-model="form.description" rows="3" placeholder="Описание товара" />
         </div>
+        <div class="field">
+          <label>Старая цена (если есть скидка)</label>
+          <InputNumber v-model="form.oldPrice" placeholder="0" :min="0" />
+        </div>
+        <div class="field-row">
+          <label>В наличии</label>
+          <ToggleSwitch v-model="form.inStock" />
+        </div>
       </div>
 
       <template #footer>
@@ -130,7 +138,7 @@ import Textarea from 'primevue/textarea'
 import FileUpload from 'primevue/fileupload'
 import ProgressSpinner from 'primevue/progressspinner'
 import { uploadImage } from '@/services/imageService'
-
+import ToggleSwitch from 'primevue/toggleswitch'
 const router = useRouter()
 const productsStore = useProductsStore()
 
@@ -153,6 +161,8 @@ const emptyForm = {
   category: '',
   image: '',
   description: '',
+  oldPrice: null,
+  inStock: true,
 }
 const form = ref({ ...emptyForm })
 
@@ -280,5 +290,12 @@ async function handleLogout() {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #eee;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
 }
 </style>
