@@ -27,3 +27,6 @@
 npm install
 npm run dev
 ```
+
+## Hosting
+https://flower-shop-69019.web.app/catalog
